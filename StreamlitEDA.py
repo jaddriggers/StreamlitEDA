@@ -12,7 +12,7 @@ st.write(
     "This application is a Streamlit dashboard that can be used to upload a CSV (or CSV inside ZIP) for EDA and Statistics")
 
 # CSV Upload
-uploaded_file = st.file_uploader("Choose a file")
+uploaded_file = st.sidebar.file_uploader("Choose a file")
 if uploaded_file is not None:
     # Check if it's a zip file
     if zipfile.is_zipfile(uploaded_file):
@@ -27,9 +27,9 @@ if uploaded_file is not None:
     st.write(df.dtypes)
 
     # column ot change data types
-    col_to_change = st.selectbox("Select column to change data type: ", df.columns)
-    new_type = st.selectbox("Select new data type: ", ['float', 'int', 'string', 'datetime'])
-    if st.button("Change Data Type"):
+    col_to_change = st.sidebar.selectbox("Select column to change data type: ", df.columns)
+    new_type = st.sidebar.selectbox("Select new data type: ", ['float', 'int', 'string', 'datetime'])
+    if st.sidebar.button("Change Data Type"):
         if new_type == 'float':
             df[col_to_change] = df[col_to_change].astype(float)
         elif new_type == 'int':
