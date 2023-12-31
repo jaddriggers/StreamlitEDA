@@ -7,6 +7,7 @@ import zipfile
 # EXTRACT CONSTANT for datetime dtype
 DATETIME_TYPE = 'datetime64[ns]'
 
+SUMMARY_MESSAGE = "Display summary statistics of the dataframe:"
 
 def read_file(uploaded_file):
     if zipfile.is_zipfile(uploaded_file):
@@ -63,10 +64,33 @@ if uploaded_file is not None:
     st.write(df.head(5))
 
     col_to_change = st.sidebar.selectbox("Select column to change data type: ", df.columns)
-    new_type = st.sidebar.selectbox("Select new data type: ", ['float', 'int', 'string', 'datetime'])
+    new_type = st.sidebar.selectbox("Select new data type: ", ['float', 'int', 'string', 'datetime', 'object'])
     if st.sidebar.button("Change Data Type"):
         change_dtypes(df, col_to_change, new_type)
 
-    st.write("Display summary statistics of the dataframe:")
-    st.write(df.describe())
-    visualize_data(df)
+    # st.markdown("---")
+    # st.markdown("### Adjust column datatypes:")
+    # for col in df.columns:
+    #     new_type = st.selectbox(f"Select new data type for {col}: ",
+    #                             ['float', 'int', 'string', 'datetime'], key=col)
+    #     if st.button("Change Data Type", key=col):
+    #         change_dtypes(df, col, new_type)
+    # st.markdown("---")
+df_description = df.describe(include='object')
+
+st.write(SUMMARY_MESSAGE)
+st.write('Numerical stats')
+st.dataframe(df.describe())
+
+st.write('Categorical stats')
+st.dataframe(df_description)
+
+st.write('Count of null values')
+st.dataframe(df.isnull().sum())
+
+
+
+st.write("Display data types of each column:")
+st.write(df.dtypes)
+
+visualize_data(df)
