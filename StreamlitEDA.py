@@ -1,58 +1,75 @@
-import datetime
-import streamlit as st
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
+import streamlit as st
 import zipfile
-import io
 
-# Title and intro
+
+def read_file(uploaded_file):
+    if zipfile.is_zipfile(uploaded_file):
+        with zipfile.ZipFile(uploaded_file) as z:
+            with z.open(z.namelist()[0]) as f:
+                return pd.read_csv(f)
+    else:
+        return pd.read_csv(uploaded_file)
+
+
+def change_dtypes(df, col_to_change, new_type):
+    if new_type == 'datetime':
+        new_type = 'datetime64[ns]'
+    df[col_to_change] = df[col_to_change].astype(new_type)
+
+
+def visualize_data(df):
+    numerical_columns = df.select_dtypes(include=['float64', 'int']).columns.tolist()
+    categorical_columns = df.select_dtypes(include=['object']).columns.tolist()
+
+    if not numerical_columns and not categorical_columns:
+        st.write("No numerical or categorical columns found in the dataset.")
+    else:
+
+        st.subheader("Visualize Data")
+        column_type = st.selectbox("Choose the type of columns to visualize", ["Numerical", "Categorical"])
+
+        if column_type == "Numerical":
+            if numerical_columns:
+                columns_to_plot = st.multiselect("Select the numerical columns to plot", numerical_columns)
+                if columns_to_plot:
+                    fig = sns.pairplot(data=df[columns_to_plot])
+                    st.pyplot(fig)
+            else:
+                st.write("No numerical columns available for plotting")
+
+        else:  # Categorical
+            if categorical_columns:
+                columns_to_plot = st.multiselect("Select the categorical columns to plot", categorical_columns)
+                if columns_to_plot:
+                    for column in columns_to_plot:
+                        fig, ax = plt.subplots()
+                        sns.countplot(x=column, data=df)
+                        st.pyplot(fig)
+            else:
+                st.write("No categorical columns available for plotting")
+
+
 st.title("Upload CSV (or CSV inside ZIP) for EDA and Statistics")
 st.write(
     "This application is a Streamlit dashboard that can be used to upload a CSV (or CSV inside ZIP) for EDA and Statistics")
 
-# CSV Upload
 uploaded_file = st.sidebar.file_uploader("Choose a file")
 if uploaded_file is not None:
-    # Check if it's a zip file
-    if zipfile.is_zipfile(uploaded_file):
-        with zipfile.ZipFile(uploaded_file) as z:
-            with z.open(z.namelist()[0]) as f:
-                df = pd.read_csv(f)
-    else:
-        df = pd.read_csv(uploaded_file)
+    df = read_file(uploaded_file)
+    st.write("Display the first 5 rows of the dataframe:")
+    st.write(df.head(5))
 
-    # Show dataframe
-    st.write(df)
-    st.write(df.dtypes)
-
-    # column ot change data types
     col_to_change = st.sidebar.selectbox("Select column to change data type: ", df.columns)
     new_type = st.sidebar.selectbox("Select new data type: ", ['float', 'int', 'string', 'datetime'])
     if st.sidebar.button("Change Data Type"):
-        if new_type == 'float':
-            df[col_to_change] = df[col_to_change].astype(float)
-        elif new_type == 'int':
-            df[col_to_change] = df[col_to_change].astype(int)
-        elif new_type == 'string':
-            df[col_to_change] = df[col_to_change].astype(str)
-        elif new_type == 'datetime':
-            df[col_to_change] = df[col_to_change].astype(datetime)
+        change_dtypes(df, col_to_change, new_type)
 
-    # Show statistics
+    st.write("Display summary statistics of the dataframe:")
     st.write(df.describe())
-    st.write(df.info())
-    st.write(df.dtypes)
 
-    # Select numerical columns to plot
-    numerical_columns = df.select_dtypes(include=['float64', 'int']).columns.tolist()
-    if not numerical_columns:
-        st.write("No numerical columns found in the dataset.")
-    else:
-        st.subheader("Visualize Data")
-        columns_to_plot = st.multiselect("Select the numerical columns to plot", numerical_columns)
+    visualize_data(df)
 
-    if len(columns_to_plot) > 0:
-        fig = sns.pairplot(data=df[columns_to_plot])
-        plt.show()
-        st.pyplot()
+
