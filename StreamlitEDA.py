@@ -4,6 +4,9 @@ import seaborn as sns
 import streamlit as st
 import zipfile
 
+# EXTRACT CONSTANT for datetime dtype
+DATETIME_TYPE = 'datetime64[ns]'
+
 
 def read_file(uploaded_file):
     if zipfile.is_zipfile(uploaded_file):
@@ -16,8 +19,23 @@ def read_file(uploaded_file):
 
 def change_dtypes(df, col_to_change, new_type):
     if new_type == 'datetime':
-        new_type = 'datetime64[ns]'
+        new_type = DATETIME_TYPE
     df[col_to_change] = df[col_to_change].astype(new_type)
+
+
+# EXTRACT FUNCTION for plotting
+def plot_columns(df, columns_to_plot, column_type):
+    if columns_to_plot:
+        if column_type == "Numerical":
+            fig = sns.pairplot(data=df[columns_to_plot])
+            st.pyplot(fig)
+        else:  # Categorical
+            for column in columns_to_plot:
+                fig, ax = plt.subplots()
+                sns.countplot(x=column, data=df)
+                st.pyplot(fig)
+    else:
+        st.write(f"No {column_type.lower()} columns available for plotting")
 
 
 def visualize_data(df):
@@ -27,29 +45,11 @@ def visualize_data(df):
     if not numerical_columns and not categorical_columns:
         st.write("No numerical or categorical columns found in the dataset.")
     else:
-
         st.subheader("Visualize Data")
         column_type = st.selectbox("Choose the type of columns to visualize", ["Numerical", "Categorical"])
-
-        if column_type == "Numerical":
-            if numerical_columns:
-                columns_to_plot = st.multiselect("Select the numerical columns to plot", numerical_columns)
-                if columns_to_plot:
-                    fig = sns.pairplot(data=df[columns_to_plot])
-                    st.pyplot(fig)
-            else:
-                st.write("No numerical columns available for plotting")
-
-        else:  # Categorical
-            if categorical_columns:
-                columns_to_plot = st.multiselect("Select the categorical columns to plot", categorical_columns)
-                if columns_to_plot:
-                    for column in columns_to_plot:
-                        fig, ax = plt.subplots()
-                        sns.countplot(x=column, data=df)
-                        st.pyplot(fig)
-            else:
-                st.write("No categorical columns available for plotting")
+        columns_to_select = numerical_columns if column_type == "Numerical" else categorical_columns
+        columns_to_plot = st.multiselect(f"Select the {column_type.lower()} columns to plot", columns_to_select)
+        plot_columns(df, columns_to_plot, column_type)
 
 
 st.title("Upload CSV (or CSV inside ZIP) for EDA and Statistics")
@@ -69,7 +69,4 @@ if uploaded_file is not None:
 
     st.write("Display summary statistics of the dataframe:")
     st.write(df.describe())
-
     visualize_data(df)
-
-
